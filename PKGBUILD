@@ -1,0 +1,51 @@
+# Maintainer: graysky <graysky AT archlinux DOT org>
+# Contributor: Gaetan Bisson <bisson@archlinux.org>
+# Contributor: Austin ( doorknob60 [at] gmail [dot] com )
+# Contributor: Giancarlo Bianchi <giancarlobianchi76 -at- gmail -dot- com>
+
+pkgname=broadcom-wl-rt
+pkgver=6.30.223.141
+pkgrel=2
+pkgdesc='Broadcom 802.11abgn hybrid Linux networking device driver (for linux-rt kernel).'
+arch=('i686' 'x86_64')
+url='http://www.broadcom.com/support/802.11/linux_sta.php'
+license=('custom')
+depends=('linux-rt>=3.12' 'linux-rt<3.13')
+makedepends=('linux-rt-headers>=3.12' 'linux-rt-headers<3.13')
+[[ $CARCH = x86_64 ]] && _arch=_64 || _arch=
+source=("http://www.broadcom.com/docs/linux_sta/hybrid-v35${_arch}-nodebug-pcoem-${pkgver//./_}.tar.gz"
+	'modprobe.d'
+	'license.patch'
+	'linux-recent.patch')
+sha1sums=('2917d785ffd9663b1d23cfa388b9bd7c9f03cc3b'
+          'd24aa0d9233fd39bf0571489f48bab58b1c2d430'
+          '81c05d48b234d56ad2e18eaee5ce89b79550ef20'
+          '0d59426647fffe5b8c3835c7c6198ee4074ef1db')
+[[ $CARCH = x86_64 ]] && sha1sums[0]='3a2453c71a07030f41a8fc613c87badf8452848c'
+
+backup=('etc/modprobe.d/broadcom-wl_rt.conf')
+install=broadcom-wl-rt.install
+
+_extramodules=extramodules-3.12-rt
+_kernver="$(cat /usr/lib/modules/${_extramodules}/version)"
+
+prepare() {
+	cd "${srcdir}"
+	patch -p1 -i linux-recent.patch
+	patch -p1 -i license.patch
+}
+
+build() {
+	cd "${srcdir}"
+	make -C /usr/lib/modules/"${_kernver}"/build M=`pwd`
+}
+
+package() {
+	cd "${srcdir}"
+	install -D -m 644 wl.ko "${pkgdir}/usr/lib/modules/${_extramodules}/wl.ko"
+	gzip "${pkgdir}/usr/lib/modules/${_extramodules}/wl.ko"
+	install -D -m 644 lib/LICENSE.txt "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+	install -D -m 644 modprobe.d "${pkgdir}"/etc/modprobe.d/broadcom-wl_rt.conf
+}
+
+# vim:set ts=2 sw=2 et:
